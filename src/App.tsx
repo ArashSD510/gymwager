@@ -199,6 +199,7 @@ export default function App() {
       const updatedChallenge = { ...c, host_id: p.id };
       localStorage.setItem("gymwager_challenge_id", c.id);
       localStorage.setItem("gymwager_participant_id", p.id);
+      localStorage.setItem("gymwager_is_host", "true");
       setChallenge(updatedChallenge); setParticipant(p); setParticipants([p]); setCheckins([]);
       setScreen("lobby");
     } catch(e: any) { setError("Failed to create: " + e.message); }
@@ -221,6 +222,7 @@ export default function App() {
       const day = calcCurrentDay(c);
       localStorage.setItem("gymwager_challenge_id", c.id);
       localStorage.setItem("gymwager_participant_id", p.id);
+      localStorage.setItem("gymwager_is_host", "false");
       setChallenge(c); setParticipant(p); setParticipants([...(ps||[]), p]);
       setCheckins(ci || []); setCurrentDay(day);
       window.history.replaceState({}, "", window.location.pathname);
@@ -248,7 +250,7 @@ export default function App() {
   const prizePool = participants.length * (challenge?.wager || 0);
   const winShare = activeParts.length > 0 ? Math.floor(prizePool / activeParts.length) : 0;
   const myCheckins = getMyCheckins();
-  const isHost = challenge && participant && (challenge.host_id === participant.id || challenge.host_name === participant.name);
+  const isHost = localStorage.getItem("gymwager_is_host") === "true";
 
   if (screen === "loading") return (
     <div style={{ ...pageStyle, alignItems:"center", justifyContent:"center" }}>
@@ -311,6 +313,7 @@ export default function App() {
     if (window.confirm("Leave this challenge and return to home?")) {
       localStorage.removeItem("gymwager_challenge_id");
       localStorage.removeItem("gymwager_participant_id");
+      localStorage.removeItem("gymwager_is_host");
       setScreen("home"); setChallenge(null); setParticipant(null); setParticipants([]); setCheckins([]);
     }
   }
