@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef, useCallback } from "react";
-import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+import { useState, useEffect, useRef } from "react";
+import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
   "https://bnnvhxbhrfhazexhorau.supabase.co",
@@ -8,7 +8,6 @@ const supabase = createClient(
 
 const ACCENT = "#00FF87";
 const ACCENT2 = "#00CFFF";
-const DARK = "#0a0a0a";
 const CARD = "#141414";
 const CARD2 = "#1c1c1c";
 const sampleAvatars = ["💪","🏋️","🔥","⚡","🥊","🎯","🏃","💥","🦾","🏆"];
@@ -16,34 +15,32 @@ const sampleAvatars = ["💪","🏋️","🔥","⚡","🥊","🎯","🏃","💥"
 function generateCode() {
   return Math.random().toString(36).substring(2,8).toUpperCase();
 }
-
-function venmoLink(username, amount, note) {
+function venmoLink(username: string, amount: number, note: string) {
   return `https://venmo.com/${username}?txn=pay&amount=${amount}&note=${encodeURIComponent(note)}`;
 }
 
 export default function App() {
   const [screen, setScreen] = useState("loading");
-  const [challenge, setChallenge] = useState(null);
-  const [participant, setParticipant] = useState(null);
-  const [participants, setParticipants] = useState([]);
-  const [checkins, setCheckins] = useState([]);
+  const [challenge, setChallenge] = useState<any>(null);
+  const [participant, setParticipant] = useState<any>(null);
+  const [participants, setParticipants] = useState<any[]>([]);
+  const [checkins, setCheckins] = useState<any[]>([]);
   const [currentDay, setCurrentDay] = useState(1);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string|null>(null);
   const [loading, setLoading] = useState(false);
   const [tlFrame, setTlFrame] = useState(0);
   const [tlPlaying, setTlPlaying] = useState(false);
   const [tlSpeed, setTlSpeed] = useState(1);
-  const [showPayModal, setShowPayModal] = useState(null);
-  const [cameraStream, setCameraStream] = useState(null);
-  const [capturedPhoto, setCapturedPhoto] = useState(null);
-  const [gps, setGps] = useState(null);
+  const [showPayModal, setShowPayModal] = useState<any>(null);
+  const [cameraStream, setCameraStream] = useState<any>(null);
+  const [capturedPhoto, setCapturedPhoto] = useState<string|null>(null);
+  const [gps, setGps] = useState<any>(null);
   const [gpsLoading, setGpsLoading] = useState(false);
-
   const [createForm, setCreateForm] = useState({ name:"", duration:30, wager:50, venmo:"", myName:"" });
   const [joinForm, setJoinForm] = useState({ code:"", myName:"", venmo:"" });
 
-  const videoRef = useRef();
-  const canvasRef = useRef();
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -60,7 +57,7 @@ export default function App() {
     }
   }, []);
 
-  async function resumeSession(cid, pid) {
+  async function resumeSession(cid: string, pid: string) {
     setLoading(true);
     try {
       const { data: c } = await supabase.from("challenges").select().eq("id", cid).single();
@@ -77,11 +74,11 @@ export default function App() {
     setLoading(false);
   }
 
-  function calcCurrentDay(c) {
+  function calcCurrentDay(c: any) {
     if (!c.start_date) return 1;
     const start = new Date(c.start_date);
     const now = new Date();
-    const diff = Math.floor((now - start) / (1000 * 60 * 60 * 24)) + 1;
+    const diff = Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
     return Math.min(Math.max(diff, 1), c.duration);
   }
 
@@ -89,22 +86,22 @@ export default function App() {
     if (!challenge || screen !== "lobby") return;
     const sub = supabase.channel("lobby_" + challenge.id)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "participants", filter: `challenge_id=eq.${challenge.id}` },
-        payload => setParticipants(ps => [...ps, payload.new]))
+        (payload: any) => setParticipants(ps => [...ps, payload.new]))
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "challenges", filter: `id=eq.${challenge.id}` },
-        payload => { if (payload.new.started) { setChallenge(payload.new); setScreen("challenge"); } })
+        (payload: any) => { if (payload.new.started) { setChallenge(payload.new); setScreen("challenge"); } })
       .subscribe();
-    return () => supabase.removeChannel(sub);
+    return () => { supabase.removeChannel(sub); };
   }, [challenge, screen]);
 
   useEffect(() => {
     if (!challenge || screen !== "challenge") return;
     const sub = supabase.channel("challenge_" + challenge.id)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "checkins", filter: `challenge_id=eq.${challenge.id}` },
-        payload => setCheckins(ci => [...ci, payload.new]))
+        (payload: any) => setCheckins(ci => [...ci, payload.new]))
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "participants", filter: `challenge_id=eq.${challenge.id}` },
-        payload => setParticipants(ps => ps.map(p => p.id === payload.new.id ? payload.new : p)))
+        (payload: any) => setParticipants(ps => ps.map(p => p.id === payload.new.id ? payload.new : p)))
       .subscribe();
-    return () => supabase.removeChannel(sub);
+    return () => { supabase.removeChannel(sub); };
   }, [challenge, screen]);
 
   useEffect(() => {
@@ -121,14 +118,14 @@ export default function App() {
 
   function getMyCheckins() {
     if (!participant) return [];
-    return checkins.filter(c => c.participant_id === participant.id).sort((a,b) => a.day - b.day);
+    return checkins.filter((c: any) => c.participant_id === participant.id).sort((a: any, b: any) => a.day - b.day);
   }
 
   async function startCamera() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
       setCameraStream(stream);
-      if (videoRef.current) videoRef.current.srcObject = stream;
+      setTimeout(() => { if (videoRef.current) videoRef.current.srcObject = stream; }, 100);
       setScreen("camera");
     } catch(e) {
       setError("Camera access denied. Please allow camera in your browser settings.");
@@ -136,16 +133,16 @@ export default function App() {
   }
 
   function stopCamera() {
-    if (cameraStream) cameraStream.getTracks().forEach(t => t.stop());
+    if (cameraStream) cameraStream.getTracks().forEach((t: any) => t.stop());
     setCameraStream(null);
   }
 
   function capturePhoto() {
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
+    const video = videoRef.current!;
+    const canvas = canvasRef.current!;
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
-    canvas.getContext("2d").drawImage(video, 0, 0);
+    canvas.getContext("2d")!.drawImage(video, 0, 0);
     const dataUrl = canvas.toDataURL("image/jpeg", 0.8);
     setCapturedPhoto(dataUrl);
     stopCamera();
@@ -165,7 +162,7 @@ export default function App() {
   async function submitCheckin() {
     setLoading(true); setError(null);
     try {
-      const blob = await (await fetch(capturedPhoto)).blob();
+      const blob = await (await fetch(capturedPhoto!)).blob();
       const path = `${challenge.id}/${participant.id}/day${currentDay}.jpg`;
       const { error: upErr } = await supabase.storage.from("selfies").upload(path, blob, { upsert: true });
       if (upErr) throw upErr;
@@ -177,7 +174,7 @@ export default function App() {
       if (ciErr) throw ciErr;
       setCheckins(ci => [...ci, { participant_id: participant.id, day: currentDay, selfie_url: urlData.publicUrl, lat: gps?.lat, lng: gps?.lng }]);
       setCapturedPhoto(null); setGps(null); setScreen("challenge");
-    } catch(e) { setError("Check-in failed: " + e.message); }
+    } catch(e: any) { setError("Check-in failed: " + e.message); }
     setLoading(false);
   }
 
@@ -187,7 +184,8 @@ export default function App() {
       const code = generateCode();
       const { data: c, error: cErr } = await supabase.from("challenges").insert({
         code, name: createForm.name || "Gym Challenge",
-        duration: parseInt(createForm.duration), wager: parseFloat(createForm.wager),
+        duration: parseInt(String(createForm.duration)),
+        wager: parseFloat(String(createForm.wager)),
         host_name: createForm.myName, started: false,
       }).select().single();
       if (cErr) throw cErr;
@@ -196,11 +194,14 @@ export default function App() {
         venmo: createForm.venmo, avatar: sampleAvatars[0], eliminated: false,
       }).select().single();
       if (pErr) throw pErr;
+      // Save host_id now that we have participant id
+      await supabase.from("challenges").update({ host_id: p.id }).eq("id", c.id);
+      const updatedChallenge = { ...c, host_id: p.id };
       localStorage.setItem("gymwager_challenge_id", c.id);
       localStorage.setItem("gymwager_participant_id", p.id);
-      setChallenge(c); setParticipant(p); setParticipants([p]); setCheckins([]);
+      setChallenge(updatedChallenge); setParticipant(p); setParticipants([p]); setCheckins([]);
       setScreen("lobby");
-    } catch(e) { setError("Failed to create: " + e.message); }
+    } catch(e: any) { setError("Failed to create: " + e.message); }
     setLoading(false);
   }
 
@@ -224,7 +225,7 @@ export default function App() {
       setCheckins(ci || []); setCurrentDay(day);
       window.history.replaceState({}, "", window.location.pathname);
       setScreen(c.started ? "challenge" : "lobby");
-    } catch(e) { setError(e.message); }
+    } catch(e: any) { setError(e.message); }
     setLoading(false);
   }
 
@@ -232,26 +233,22 @@ export default function App() {
     setLoading(true);
     const today = new Date().toISOString().split("T")[0];
     const { error } = await supabase.from("challenges").update({ started: true, start_date: today }).eq("id", challenge.id);
-    if (!error) { setChallenge(c => ({ ...c, started: true, start_date: today })); setCurrentDay(1); setScreen("challenge"); }
+    if (!error) { setChallenge((c: any) => ({ ...c, started: true, start_date: today })); setCurrentDay(1); setScreen("challenge"); }
     setLoading(false);
   }
 
-  function getShareUrl() {
-    if (!challenge) return "";
-    return `${window.location.origin}${window.location.pathname}?code=${challenge.code}`;
-  }
-
   function copyInvite() {
-    navigator.clipboard.writeText(getShareUrl()).then(() => alert("Invite link copied!"));
+    const url = `${window.location.origin}?code=${challenge.code}`;
+    navigator.clipboard.writeText(url).then(() => alert("Invite link copied!"));
   }
 
-  const todayCheckins = checkins.filter(c => c.day === currentDay);
-  const iCheckedIn = participant && todayCheckins.some(c => c.participant_id === participant.id);
-  const activeParts = participants.filter(p => !p.eliminated);
+  const todayCheckins = checkins.filter((c: any) => c.day === currentDay);
+  const iCheckedIn = participant && todayCheckins.some((c: any) => c.participant_id === participant.id);
+  const activeParts = participants.filter((p: any) => !p.eliminated);
   const prizePool = participants.length * (challenge?.wager || 0);
   const winShare = activeParts.length > 0 ? Math.floor(prizePool / activeParts.length) : 0;
   const myCheckins = getMyCheckins();
-  const isHost = challenge && participant && (challenge.host_name === participant.name || challenge.host_id === participant.id);
+  const isHost = challenge && participant && (challenge.host_id === participant.id || challenge.host_name === participant.name);
 
   if (screen === "loading") return (
     <div style={{ ...pageStyle, alignItems:"center", justifyContent:"center" }}>
@@ -276,15 +273,15 @@ export default function App() {
       <div style={{ padding:24, display:"flex", flexDirection:"column", gap:16, overflowY:"auto" }}>
         {error && <ErrBox msg={error} />}
         <Label>Your Name</Label>
-        <Input placeholder="e.g. Alex" value={createForm.myName} onChange={v => setCreateForm(f=>({...f,myName:v}))} />
+        <Input placeholder="e.g. Alex" value={createForm.myName} onChange={(v: string) => setCreateForm(f=>({...f,myName:v}))} />
         <Label>Challenge Name</Label>
-        <Input placeholder="e.g. 30-Day Grind" value={createForm.name} onChange={v => setCreateForm(f=>({...f,name:v}))} />
+        <Input placeholder="e.g. 30-Day Grind" value={createForm.name} onChange={(v: string) => setCreateForm(f=>({...f,name:v}))} />
         <Label>Duration (days)</Label>
-        <SegControl options={[14,21,30,60]} value={createForm.duration} onChange={v => setCreateForm(f=>({...f,duration:v}))} fmt={v=>`${v}d`} />
+        <SegControl options={[14,21,30,60]} value={createForm.duration} onChange={(v: number) => setCreateForm(f=>({...f,duration:v}))} fmt={(v: number) =>`${v}d`} />
         <Label>Wager per Person ($)</Label>
-        <SegControl options={[20,50,100,200]} value={createForm.wager} onChange={v => setCreateForm(f=>({...f,wager:v}))} fmt={v=>`$${v}`} />
+        <SegControl options={[20,50,100,200]} value={createForm.wager} onChange={(v: number) => setCreateForm(f=>({...f,wager:v}))} fmt={(v: number) =>`$${v}`} />
         <Label>Your Venmo Username</Label>
-        <Input placeholder="@yourvenmo" value={createForm.venmo} onChange={v => setCreateForm(f=>({...f,venmo:v}))} />
+        <Input placeholder="@yourvenmo" value={createForm.venmo} onChange={(v: string) => setCreateForm(f=>({...f,venmo:v}))} />
         <button onClick={createChallenge} disabled={!createForm.myName||loading} style={btnStyle(ACCENT,"#000",!createForm.myName||loading)}>
           {loading ? "Creating..." : "Create Challenge →"}
         </button>
@@ -298,11 +295,11 @@ export default function App() {
       <div style={{ padding:24, display:"flex", flexDirection:"column", gap:16 }}>
         {error && <ErrBox msg={error} />}
         <Label>Your Name</Label>
-        <Input placeholder="e.g. Alex" value={joinForm.myName} onChange={v => setJoinForm(f=>({...f,myName:v}))} />
+        <Input placeholder="e.g. Alex" value={joinForm.myName} onChange={(v: string) => setJoinForm(f=>({...f,myName:v}))} />
         <Label>Your Venmo Username</Label>
-        <Input placeholder="@yourvenmo" value={joinForm.venmo} onChange={v => setJoinForm(f=>({...f,venmo:v}))} />
+        <Input placeholder="@yourvenmo" value={joinForm.venmo} onChange={(v: string) => setJoinForm(f=>({...f,venmo:v}))} />
         <Label>Challenge Code</Label>
-        <Input placeholder="e.g. X7K2P9" value={joinForm.code} onChange={v => setJoinForm(f=>({...f,code:v.toUpperCase()}))} />
+        <Input placeholder="e.g. X7K2P9" value={joinForm.code} onChange={(v: string) => setJoinForm(f=>({...f,code:v.toUpperCase()}))} />
         <button onClick={joinChallenge} disabled={!joinForm.code||!joinForm.myName||loading} style={btnStyle(ACCENT,"#000",!joinForm.code||!joinForm.myName||loading)}>
           {loading ? "Joining..." : "Join Challenge →"}
         </button>
@@ -328,20 +325,21 @@ export default function App() {
         </div>
         <div style={{ background:CARD, borderRadius:16, padding:16 }}>
           <div style={{ color:"#888", fontSize:12, textTransform:"uppercase", letterSpacing:1, marginBottom:12 }}>Players Joined</div>
-          {participants.map(p => (
+          {participants.map((p: any) => (
             <div key={p.id} style={{ display:"flex", alignItems:"center", gap:12, padding:"8px 0", borderBottom:"1px solid #1a1a1a" }}>
               <div style={{ fontSize:22 }}>{p.avatar}</div>
               <div style={{ color:"#fff", fontWeight:600 }}>{p.name}{p.id===participant?.id?" (You)":""}</div>
-              {p.name===challenge.host_name && <div style={{ marginLeft:"auto", background:"#1a3a1a", color:ACCENT, borderRadius:8, padding:"2px 10px", fontSize:12 }}>Host</div>}
+              {p.id===challenge.host_id && <div style={{ marginLeft:"auto", background:"#1a3a1a", color:ACCENT, borderRadius:8, padding:"2px 10px", fontSize:12 }}>Host</div>}
             </div>
           ))}
         </div>
-        {isHost && (
+        {isHost ? (
           <button onClick={startChallenge} disabled={participants.length<2||loading} style={btnStyle(ACCENT,"#000",participants.length<2||loading)}>
             {participants.length<2 ? "Waiting for players..." : loading ? "Starting..." : "Start Challenge →"}
           </button>
+        ) : (
+          <div style={{ color:"#555", textAlign:"center", fontSize:14 }}>Waiting for host to start...</div>
         )}
-        {!isHost && <div style={{ color:"#555", textAlign:"center", fontSize:14 }}>Waiting for host to start...</div>}
       </div>
     </div>
   );
@@ -362,7 +360,7 @@ export default function App() {
       <TopBar onBack={() => { setCapturedPhoto(null); setScreen("challenge"); }} title="Confirm Check-In" />
       <div style={{ padding:24, display:"flex", flexDirection:"column", gap:16 }}>
         {error && <ErrBox msg={error} />}
-        {capturedPhoto && <img src={capturedPhoto} style={{ width:"100%", borderRadius:16, aspectRatio:"1", objectFit:"cover" }} />}
+        {capturedPhoto && <img src={capturedPhoto} style={{ width:"100%", borderRadius:16, aspectRatio:"1/1", objectFit:"cover" }} />}
         <div style={{ background:CARD, borderRadius:12, padding:14 }}>
           <div style={{ color:"#666", fontSize:13 }}>📍 Location</div>
           <div style={{ color:"#fff", fontSize:14, marginTop:4 }}>
@@ -404,10 +402,10 @@ export default function App() {
           <div style={{ color:"#888", fontSize:12, textTransform:"uppercase", letterSpacing:1, marginBottom:12 }}>Today's Check-In — Day {currentDay}</div>
           {iCheckedIn ? (
             <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-              {(() => { const ci = checkins.find(c => c.participant_id===participant.id && c.day===currentDay); return ci?.selfie_url ? <img src={ci.selfie_url} style={{ width:60, height:60, borderRadius:12, objectFit:"cover", border:`2px solid ${ACCENT}` }} /> : null; })()}
+              {(() => { const ci = checkins.find((c: any) => c.participant_id===participant.id && c.day===currentDay); return ci?.selfie_url ? <img src={ci.selfie_url} style={{ width:60, height:60, borderRadius:12, objectFit:"cover", border:`2px solid ${ACCENT}` }} /> : null; })()}
               <div>
                 <div style={{ color:ACCENT, fontWeight:700 }}>✓ Checked In!</div>
-                {(() => { const ci = checkins.find(c => c.participant_id===participant.id && c.day===currentDay); return ci ? <div style={{ color:"#666", fontSize:12 }}>📍 {ci.lat}, {ci.lng}</div> : null; })()}
+                {(() => { const ci = checkins.find((c: any) => c.participant_id===participant.id && c.day===currentDay); return ci ? <div style={{ color:"#666", fontSize:12 }}>📍 {ci.lat}, {ci.lng}</div> : null; })()}
               </div>
             </div>
           ) : (
@@ -418,8 +416,8 @@ export default function App() {
         </div>
         <div style={{ background:CARD, borderRadius:16, padding:16 }}>
           <div style={{ color:"#888", fontSize:12, textTransform:"uppercase", letterSpacing:1, marginBottom:12 }}>Participants</div>
-          {participants.map(p => {
-            const checked = todayCheckins.some(c => c.participant_id===p.id);
+          {participants.map((p: any) => {
+            const checked = todayCheckins.some((c: any) => c.participant_id===p.id);
             return (
               <div key={p.id} style={{ display:"flex", alignItems:"center", gap:12, padding:"8px 0", borderBottom:"1px solid #1a1a1a", opacity:p.eliminated?0.4:1 }}>
                 <div style={{ fontSize:22 }}>{p.avatar}</div>
@@ -456,77 +454,75 @@ export default function App() {
     </div>
   );
 
-  if (screen === "results" && challenge) {
-    return (
-      <div style={pageStyle}>
-        <div style={{ background:"linear-gradient(180deg,#0d2b1a,#0a0a0a)", padding:"32px 24px 20px", textAlign:"center" }}>
-          <div style={{ fontSize:56 }}>🏆</div>
-          <div style={{ color:ACCENT, fontSize:28, fontWeight:900 }}>Challenge Complete!</div>
-          <div style={{ color:"#666", fontSize:14, marginTop:4 }}>{challenge.name} · {challenge.duration} Days</div>
-          <div style={{ color:"#fff", fontSize:36, fontWeight:900, marginTop:16 }}>${winShare}</div>
-          <div style={{ color:"#666", fontSize:13 }}>per winner · {activeParts.length} survivor{activeParts.length!==1?"s":""}</div>
-        </div>
-        <div style={{ padding:16, display:"flex", flexDirection:"column", gap:12 }}>
-          <div style={{ background:CARD, borderRadius:16, padding:16 }}>
-            <div style={{ color:"#888", fontSize:12, textTransform:"uppercase", letterSpacing:1, marginBottom:12 }}>🏅 Survivors</div>
-            {activeParts.map(p => (
-              <div key={p.id} style={{ display:"flex", alignItems:"center", gap:12, marginBottom:8 }}>
-                <div style={{ fontSize:24 }}>{p.avatar}</div>
-                <div style={{ flex:1, color:"#fff", fontWeight:600 }}>{p.name}{p.id===participant?.id?" (You)":""}</div>
-                {p.venmo && <a href={venmoLink(p.venmo, winShare, `GymWager winnings - ${challenge.name}`)} target="_blank" rel="noreferrer"
-                  style={{ background:"#0070ba", color:"#fff", borderRadius:8, padding:"6px 14px", fontSize:13, fontWeight:700, textDecoration:"none" }}>
-                  💙 Pay ${winShare}
-                </a>}
-              </div>
-            ))}
-          </div>
-          <div style={{ background:CARD, borderRadius:16, padding:16 }}>
-            <div style={{ color:"#888", fontSize:12, textTransform:"uppercase", letterSpacing:1, marginBottom:12 }}>🎞 Your Journey</div>
-            {myCheckins.length === 0 ? (
-              <div style={{ color:"#555", textAlign:"center", padding:20 }}>No selfies recorded</div>
-            ) : (
-              <>
-                <div style={{ display:"flex", gap:6, overflowX:"auto", paddingBottom:8, marginBottom:12 }}>
-                  {myCheckins.map((c, i) => (
-                    <img key={i} src={c.selfie_url} onClick={() => { setTlFrame(i); setTlPlaying(false); }}
-                      style={{ width:48, height:48, borderRadius:8, objectFit:"cover", flexShrink:0, cursor:"pointer", border: i===tlFrame ? `2px solid ${ACCENT}` : "2px solid transparent" }} />
-                  ))}
-                </div>
-                <img src={myCheckins[tlFrame]?.selfie_url} style={{ width:"100%", aspectRatio:"1", borderRadius:16, objectFit:"cover", marginBottom:12 }} />
-                <div style={{ color:"#666", fontSize:12, textAlign:"center", marginBottom:8 }}>Day {myCheckins[tlFrame]?.day} · {tlFrame+1}/{myCheckins.length}</div>
-                <div style={{ display:"flex", gap:8, marginBottom:10 }}>
-                  <button onClick={() => setTlFrame(f => Math.max(0,f-1))} style={iconBtn}>⏮</button>
-                  <button onClick={() => { if(tlPlaying) setTlPlaying(false); else { if(tlFrame===myCheckins.length-1) setTlFrame(0); setTlPlaying(true); } }}
-                    style={{ ...iconBtn, background:ACCENT, color:"#000", flex:1, fontWeight:800 }}>
-                    {tlPlaying ? "⏸ Pause" : tlFrame===myCheckins.length-1 ? "↺ Replay" : "▶ Play"}
-                  </button>
-                  <button onClick={() => setTlFrame(f => Math.min(myCheckins.length-1,f+1))} style={iconBtn}>⏭</button>
-                </div>
-                <div style={{ display:"flex", gap:8 }}>
-                  <span style={{ color:"#666", fontSize:13, alignSelf:"center" }}>Speed:</span>
-                  {[0.5,1,2,4].map(s => (
-                    <button key={s} onClick={() => setTlSpeed(s)} style={{ flex:1, padding:"6px 0", borderRadius:8, border:"none", cursor:"pointer",
-                      background: tlSpeed===s ? ACCENT : CARD2, color: tlSpeed===s ? "#000" : "#888", fontWeight:700, fontSize:13 }}>
-                      {s}x
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-          <button onClick={() => { localStorage.removeItem("gymwager_challenge_id"); localStorage.removeItem("gymwager_participant_id"); setScreen("home"); setChallenge(null); setParticipant(null); }}
-            style={btnStyle("#222","#888")}>
-            Back to Home
-          </button>
-        </div>
+  if (screen === "results" && challenge) return (
+    <div style={pageStyle}>
+      <div style={{ background:"linear-gradient(180deg,#0d2b1a,#0a0a0a)", padding:"32px 24px 20px", textAlign:"center" }}>
+        <div style={{ fontSize:56 }}>🏆</div>
+        <div style={{ color:ACCENT, fontSize:28, fontWeight:900 }}>Challenge Complete!</div>
+        <div style={{ color:"#666", fontSize:14, marginTop:4 }}>{challenge.name} · {challenge.duration} Days</div>
+        <div style={{ color:"#fff", fontSize:36, fontWeight:900, marginTop:16 }}>${winShare}</div>
+        <div style={{ color:"#666", fontSize:13 }}>per winner · {activeParts.length} survivor{activeParts.length!==1?"s":""}</div>
       </div>
-    );
-  }
+      <div style={{ padding:16, display:"flex", flexDirection:"column", gap:12 }}>
+        <div style={{ background:CARD, borderRadius:16, padding:16 }}>
+          <div style={{ color:"#888", fontSize:12, textTransform:"uppercase", letterSpacing:1, marginBottom:12 }}>🏅 Survivors</div>
+          {activeParts.map((p: any) => (
+            <div key={p.id} style={{ display:"flex", alignItems:"center", gap:12, marginBottom:8 }}>
+              <div style={{ fontSize:24 }}>{p.avatar}</div>
+              <div style={{ flex:1, color:"#fff", fontWeight:600 }}>{p.name}{p.id===participant?.id?" (You)":""}</div>
+              {p.venmo && <a href={venmoLink(p.venmo, winShare, `GymWager winnings - ${challenge.name}`)} target="_blank" rel="noreferrer"
+                style={{ background:"#0070ba", color:"#fff", borderRadius:8, padding:"6px 14px", fontSize:13, fontWeight:700, textDecoration:"none" }}>
+                💙 Pay ${winShare}
+              </a>}
+            </div>
+          ))}
+        </div>
+        <div style={{ background:CARD, borderRadius:16, padding:16 }}>
+          <div style={{ color:"#888", fontSize:12, textTransform:"uppercase", letterSpacing:1, marginBottom:12 }}>🎞 Your Journey</div>
+          {myCheckins.length === 0 ? (
+            <div style={{ color:"#555", textAlign:"center", padding:20 }}>No selfies recorded</div>
+          ) : (
+            <>
+              <div style={{ display:"flex", gap:6, overflowX:"auto", paddingBottom:8, marginBottom:12 }}>
+                {myCheckins.map((c: any, i: number) => (
+                  <img key={i} src={c.selfie_url} onClick={() => { setTlFrame(i); setTlPlaying(false); }}
+                    style={{ width:48, height:48, borderRadius:8, objectFit:"cover", flexShrink:0, cursor:"pointer", border: i===tlFrame ? `2px solid ${ACCENT}` : "2px solid transparent" }} />
+                ))}
+              </div>
+              <img src={myCheckins[tlFrame]?.selfie_url} style={{ width:"100%", aspectRatio:"1/1", borderRadius:16, objectFit:"cover", marginBottom:12 }} />
+              <div style={{ color:"#666", fontSize:12, textAlign:"center", marginBottom:8 }}>Day {myCheckins[tlFrame]?.day} · {tlFrame+1}/{myCheckins.length}</div>
+              <div style={{ display:"flex", gap:8, marginBottom:10 }}>
+                <button onClick={() => setTlFrame(f => Math.max(0,f-1))} style={iconBtn}>⏮</button>
+                <button onClick={() => { if(tlPlaying) setTlPlaying(false); else { if(tlFrame===myCheckins.length-1) setTlFrame(0); setTlPlaying(true); } }}
+                  style={{ ...iconBtn, background:ACCENT, color:"#000", flex:1, fontWeight:800 }}>
+                  {tlPlaying ? "⏸ Pause" : tlFrame===myCheckins.length-1 ? "↺ Replay" : "▶ Play"}
+                </button>
+                <button onClick={() => setTlFrame(f => Math.min(myCheckins.length-1,f+1))} style={iconBtn}>⏭</button>
+              </div>
+              <div style={{ display:"flex", gap:8 }}>
+                <span style={{ color:"#666", fontSize:13, alignSelf:"center" }}>Speed:</span>
+                {[0.5,1,2,4].map(s => (
+                  <button key={s} onClick={() => setTlSpeed(s)} style={{ flex:1, padding:"6px 0", borderRadius:8, border:"none", cursor:"pointer",
+                    background: tlSpeed===s ? ACCENT : CARD2, color: tlSpeed===s ? "#000" : "#888", fontWeight:700, fontSize:13 }}>
+                    {s}x
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+        <button onClick={() => { localStorage.removeItem("gymwager_challenge_id"); localStorage.removeItem("gymwager_participant_id"); setScreen("home"); setChallenge(null); setParticipant(null); }}
+          style={btnStyle("#222","#888")}>
+          Back to Home
+        </button>
+      </div>
+    </div>
+  );
 
   return null;
 }
 
-function TopBar({ onBack, title }) {
+function TopBar({ onBack, title }: { onBack: (() => void) | null, title: string }) {
   return (
     <div style={{ display:"flex", alignItems:"center", gap:12, padding:"16px 20px", borderBottom:"1px solid #1a1a1a", flexShrink:0 }}>
       {onBack && <button onClick={onBack} style={{ background:"none", border:"none", color:"#666", fontSize:20, cursor:"pointer", padding:0 }}>←</button>}
@@ -534,17 +530,17 @@ function TopBar({ onBack, title }) {
     </div>
   );
 }
-function Label({ children }) {
+function Label({ children }: { children: React.ReactNode }) {
   return <div style={{ color:"#888", fontSize:13, fontWeight:600, textTransform:"uppercase", letterSpacing:0.5, marginBottom:-8 }}>{children}</div>;
 }
-function Input({ placeholder, value, onChange, type="text" }) {
+function Input({ placeholder, value, onChange, type="text" }: { placeholder: string, value: string, onChange: (v: string) => void, type?: string }) {
   return <input type={type} placeholder={placeholder} value={value} onChange={e => onChange(e.target.value)}
     style={{ background:"#1c1c1c", border:"1px solid #2a2a2a", borderRadius:12, padding:"14px 16px", color:"#fff", fontSize:16, outline:"none", width:"100%", boxSizing:"border-box" }} />;
 }
-function ErrBox({ msg }) {
+function ErrBox({ msg }: { msg: string }) {
   return <div style={{ background:"#3d0000", border:"1px solid #ff000033", borderRadius:10, padding:"10px 14px", color:"#ff6666", fontSize:14 }}>{msg}</div>;
 }
-function SegControl({ options, value, onChange, fmt }) {
+function SegControl({ options, value, onChange, fmt }: { options: number[], value: number, onChange: (v: number) => void, fmt?: (v: number) => string }) {
   return (
     <div style={{ display:"flex", gap:8 }}>
       {options.map(o => (
@@ -556,8 +552,8 @@ function SegControl({ options, value, onChange, fmt }) {
     </div>
   );
 }
-function btnStyle(bg, color, disabled=false) {
+function btnStyle(bg: string, color: string, disabled=false) {
   return { background: disabled?"#1a1a1a":bg, color: disabled?"#444":color, border:"none", borderRadius:14, padding:"15px 24px", fontSize:16, fontWeight:800, cursor: disabled?"default":"pointer", width:"100%", transition:"opacity 0.2s" };
 }
 const iconBtn = { background:"#222", border:"none", borderRadius:10, padding:"10px 16px", color:"#fff", fontSize:18, cursor:"pointer" };
-const pageStyle = { background:"#0a0a0a", minHeight:"100vh", fontFamily:"'Inter',sans-serif", display:"flex", flexDirection:"column", maxWidth:480, margin:"0 auto" };
+const pageStyle: React.CSSProperties = { background:"#0a0a0a", minHeight:"100vh", fontFamily:"'Inter',sans-serif", display:"flex", flexDirection:"column", maxWidth:480, margin:"0 auto" };
