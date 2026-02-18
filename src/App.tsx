@@ -251,7 +251,7 @@ export default function App() {
   const prizePool = participants.length * (challenge?.wager || 0);
   const winShare = activeParts.length > 0 ? Math.floor(prizePool / activeParts.length) : 0;
   const myCheckins = getMyCheckins();
-  const isHost = challenge && participant && challenge.host_name === participant.name;
+  const isHost = challenge && participant && (challenge.host_name === participant.name || challenge.host_id === participant.id);
 
   if (screen === "loading") return (
     <div style={{ ...pageStyle, alignItems:"center", justifyContent:"center" }}>
