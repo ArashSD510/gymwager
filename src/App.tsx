@@ -307,9 +307,17 @@ export default function App() {
     </div>
   );
 
+  function leaveChallenge() {
+    if (window.confirm("Leave this challenge and return to home?")) {
+      localStorage.removeItem("gymwager_challenge_id");
+      localStorage.removeItem("gymwager_participant_id");
+      setScreen("home"); setChallenge(null); setParticipant(null); setParticipants([]); setCheckins([]);
+    }
+  }
+
   if (screen === "lobby" && challenge) return (
     <div style={pageStyle}>
-      <TopBar onBack={null} title="Waiting Room" />
+      <TopBar onBack={leaveChallenge} title="Waiting Room" />
       <div style={{ padding:24, display:"flex", flexDirection:"column", gap:16, overflowY:"auto" }}>
         <div style={{ background:"linear-gradient(135deg,#0d2b1a,#0a1a0a)", border:`1px solid #00ff8733`, borderRadius:16, padding:20, textAlign:"center" }}>
           <div style={{ color:"#666", fontSize:12, textTransform:"uppercase", letterSpacing:1 }}>Invite Code</div>
@@ -376,7 +384,7 @@ export default function App() {
 
   if (screen === "challenge" && challenge) return (
     <div style={pageStyle}>
-      <div style={{ background:CARD, padding:"16px 24px", borderBottom:"1px solid #222" }}>
+      <div style={{ background:CARD, padding:"16px 24px", borderBottom:"1px solid #222", display:"flex", flexDirection:"column", gap:8 }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
           <div>
             <div style={{ color:"#666", fontSize:12, textTransform:"uppercase", letterSpacing:1 }}>Active</div>
@@ -387,7 +395,8 @@ export default function App() {
             <div style={{ color:ACCENT, fontSize:24, fontWeight:900 }}>{currentDay}<span style={{ color:"#555", fontSize:14 }}>/{challenge.duration}</span></div>
           </div>
         </div>
-        <div style={{ background:"#222", borderRadius:4, height:6, marginTop:12 }}>
+                  <button onClick={leaveChallenge} style={{ background:"none", border:"none", color:"#444", fontSize:12, cursor:"pointer", textAlign:"right", padding:0, alignSelf:"flex-end" }}>✕ Leave Challenge</button>
+          <div style={{ background:"#222", borderRadius:4, height:6, marginTop:4 }}>
           <div style={{ background:`linear-gradient(90deg,${ACCENT},${ACCENT2})`, width:`${(currentDay/challenge.duration)*100}%`, height:6, borderRadius:4 }} />
         </div>
       </div>
